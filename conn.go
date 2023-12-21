@@ -3,7 +3,6 @@ package genevahttp
 import (
 	"bytes"
 	"errors"
-	"log"
 	"net"
 
 	"github.com/getlantern/algeneva"
@@ -38,14 +37,6 @@ func (c *conn) Read(b []byte) (n int, err error) {
 		if err == nil && bytes.Contains(b, []byte("101 Switching Protocols")) {
 			c.upgraded = true
 		}
-
-		{ ///////////// >>>>> DEBUG
-			log.Printf("client read: \r\n%s", b[:n])
-			if c.upgraded {
-				log.Printf("client upgraded to websocket")
-			}
-		} ///////////// <<<<< DEBUG
-
 		return n, err
 	}
 
@@ -56,10 +47,6 @@ func (c *conn) Read(b []byte) (n int, err error) {
 	buf := make([]byte, 16384) // 16kb
 	n, err = c.Conn.Read(buf)
 	if err != nil {
-		{ ///////////// >>>>> DEBUG
-			log.Printf("server conn read error: %v\r\n", err)
-		} ///////////// <<<<< DEBUG
-
 		return n, err
 	}
 
@@ -67,11 +54,6 @@ func (c *conn) Read(b []byte) (n int, err error) {
 	if err != nil {
 		return n, err
 	}
-
-	{ ///////////// >>>>> DEBUG
-		log.Printf("server conn read: \r\n%s", unwrapped)
-	} ///////////// <<<<< DEBUG
-
 	n = copy(b, unwrapped)
 	return n, err
 }
@@ -84,19 +66,6 @@ func (c *conn) Write(b []byte) (n int, err error) {
 		// we don't need to modify the request so just write
 		return c.Conn.Write(b)
 	}
-
-	{ //////////////// >>>> DEBUG
-		if c.isClient {
-			log.Printf("client conn write: \r\n%s", b)
-
-			if bytes.Contains(b, []byte("Connection: Upgrade")) {
-				log.Printf("client upgrading to websocket")
-			}
-		} else {
-			log.Printf("server conn write: \r\n%s", b)
-		}
-	} //////////////// <<<<< DEBUG
-
 	// apply the transform if we're a client
 	if c.isClient && c.httpTransform != nil {
 		b, err = applyTransformAndWrap(b, c.httpTransform)
@@ -119,19 +88,6 @@ func (c *conn) Write(b []byte) (n int, err error) {
 
 	return n, err
 }
-
-// /////////// >>>>> DEBUG
-
-// this is just for debugging. Unless we want to log when connections are closed.
-func (c *conn) Close() error {
-	if c.isClient {
-		log.Printf("client closing connection")
-	} else {
-		log.Printf("server closing connection")
-	}
-
-	return c.Conn.Close()
-} ///////////// <<<<< DEBUG
 
 // applyTransformAndWrap uses the geneva strategy to transform a copy of the startline and headers
 // and returns a new request with the transformed headers and the original request as the body.

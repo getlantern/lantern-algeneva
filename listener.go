@@ -3,7 +3,6 @@ package genevahttp
 import (
 	"context"
 	"errors"
-	"log"
 	"net"
 	"net/http"
 	"sync"
@@ -39,11 +38,6 @@ func NewListener(network, address string, encryptionKey []byte) (net.Listener, e
 	}
 
 	l = &innerListener{l}
-
-	{ ///////////// >>>>> DEBUG
-		log.Printf("Listening on %s", l.Addr())
-	} ///////////// <<<<< DEBUG
-
 	ll := &listener{
 		listener:      l,
 		connections:   make(chan net.Conn, 100),
@@ -102,10 +96,6 @@ func (ll *listener) handleFunc(w http.ResponseWriter, r *http.Request) {
 	// connections channel? This would allow the caller to see why it failed.
 	wsc, err := websocket.Accept(w, r, nil)
 	if err != nil {
-		{ ///////////// >>>>> DEBUG
-			log.Printf("ERROR server: Failed to accept websocket: %v", err)
-		} ///////////// <<<<< DEBUG
-
 		return
 	}
 
@@ -113,15 +103,7 @@ func (ll *listener) handleFunc(w http.ResponseWriter, r *http.Request) {
 	c := websocket.NetConn(ctx, wsc, websocket.MessageBinary)
 
 	if ll.encryptionKey != nil {
-		{ ///////////// >>>>> DEBUG
-			log.Printf("server encrypting connection")
-		} ///////////// <<<<< DEBUG
-
 		if c, err = encryptConn(c, ll.encryptionKey); err != nil {
-			{ ///////////// >>>>> DEBUG
-				log.Printf("ERROR server: Failed to encrypt connection: %v", err)
-			} ///////////// <<<<< DEBUG
-
 			c.Close()
 			cancel()
 			return
@@ -142,10 +124,5 @@ func (il *innerListener) Accept() (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	{ ///////////// >>>>> DEBUG
-		log.Printf("server accepted connection")
-	} ///////////// <<<<< DEBUG
-
 	return &conn{Conn: c, isClient: false}, nil
 }

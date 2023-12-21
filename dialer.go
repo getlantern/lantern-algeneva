@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -54,15 +53,7 @@ func DialContext(ctx context.Context, network, address string, opts DialerOpts) 
 			return nil, fmt.Errorf("failed to create geneva strategy: %w", err)
 		}
 		opts.strategy = strategy
-		{ ///////////// >>>>> DEBUG
-			log.Printf("added geneva strategy: %v", opts.strategy)
-		} ///////////// <<<<< DEBUG
 	}
-
-	{ ///////////// >>>>> DEBUG
-		log.Printf("Dialing %s", address)
-	} ///////////// <<<<< DEBUG
-
 	wsopts := &websocket.DialOptions{
 		HTTPClient: &http.Client{
 			Transport: &http.Transport{DialContext: dialContext(opts)},

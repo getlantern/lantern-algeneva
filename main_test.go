@@ -3,7 +3,6 @@ package genevahttp
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"testing"
 	"time"
@@ -18,10 +17,6 @@ func TestWebsocket(t *testing.T) {
 	secongMsg := "void insert(s *char) { list[i++] = s; }"
 	firstResp := "cheat activated"
 	secondResp := "segfault"
-
-	{ ///////////// >>>>> DEBUG
-		log.SetFlags(log.LstdFlags | log.Lshortfile)
-	} ///////////// <<<<< DEBUG
 
 	// Create a listener that will accept connections from the client.
 	ll, err := NewListener("tcp", ":8080", nil)
@@ -44,38 +39,21 @@ func TestWebsocket(t *testing.T) {
 	c, err := DialContext(ctx, "tcp", "localhost:8080", opts)
 	require.NoError(t, err, "Failed to dial")
 
-	{ ///////////// >>>>> DEBUG
-		t.Log("test: client sending first message")
-	} ///////////// <<<<< DEBUG
-
 	_, err = c.Write([]byte(firstMsg))
 	require.NoError(t, err, "client: Failed to write")
 
 	buf := make([]byte, 1024)
 	n, err := c.Read(buf)
 	require.NoError(t, err, "client: Failed to read")
-
-	{ ///////////// >>>>> DEBUG
-		t.Logf("test: client read %s", buf)
-	} ///////////// <<<<< DEBUG
-
 	require.Equal(t, firstResp, string(buf[:n]))
-
-	{ ///////////// >>>>> DEBUG
-		t.Log("test: client sending second message")
-	} ///////////// <<<<< DEBUG
 
 	_, err = c.Write([]byte(secongMsg))
 	require.NoError(t, err, "client: Failed to write")
 
 	n, err = c.Read(buf)
 	require.NoError(t, err, "client: Failed to read")
-
-	{ ///////////// >>>>> DEBUG
-		t.Logf("test: client read %s", buf[:n])
-	} ///////////// <<<<< DEBUG
-
 	require.Equal(t, secondResp, string(buf[:n]))
+
 	c.Close()
 }
 
@@ -114,10 +92,6 @@ func (h *handler) handleConn(c net.Conn, t *testing.T) error {
 }
 
 func reply(c net.Conn, resp string, t *testing.T) error {
-	{ ///////////// >>>>> DEBUG
-		t.Log("test: server reading from connection")
-	} ///////////// <<<<< DEBUG
-
 	buf := make([]byte, 1024)
 	n, err := c.Read(buf)
 	if err != nil {
@@ -125,12 +99,6 @@ func reply(c net.Conn, resp string, t *testing.T) error {
 	}
 
 	buf = buf[:n]
-
-	{ ///////////// >>>>> DEBUG
-		t.Logf("test: server read %s", buf)
-		t.Log("test: server writing to connection")
-	} ///////////// <<<<< DEBUG
-
 	_, err = c.Write([]byte(resp))
 	if err != nil {
 		return fmt.Errorf("Failed to write: %w", err)
