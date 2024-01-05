@@ -3,6 +3,7 @@ package genevahttp
 import (
 	"context"
 	"crypto/tls"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
@@ -23,7 +24,7 @@ type DialerOpts struct {
 	// using AES. EncryptionKey must be 16, 24 or 32 bytes long which will use AES-128, AES-192, or
 	// AES-256, respectively, with longer keys being more secure. If EncryptionKey is nil, the
 	// connection will not be encrypted, or if TLSConfig is set, that will be used instead.
-	EncryptionKey []byte
+	EncryptionKey string
 	// TLSConfig is the TLS configuration to use for the connection.
 	// NOTE: currently not supported.
 	TLSConfig *tls.Config
@@ -65,11 +66,16 @@ func DialContext(ctx context.Context, network, address string, opts DialerOpts) 
 	}
 
 	c := websocket.NetConn(ctx, wsc, websocket.MessageBinary)
-	if opts.TLSConfig == nil && opts.EncryptionKey != nil {
+	if opts.TLSConfig == nil && opts.EncryptionKey != "" {
 		// TODO: should we close the connection if we fail to encrypt the connection? or should we just return the
 		// unencrypted connection with an error specifying that the connection is not encrypted and let the caller
 		// decide?
-		if c, err = encryptConn(c, opts.EncryptionKey); err != nil {
+		key, err := hex.DecodeString(opts.EncryptionKey)
+		if err != nil {
+			return nil, err
+		}
+
+		if c, err = encryptConn(c, key); err != nil {
 			c.Close()
 			return nil, err
 		}

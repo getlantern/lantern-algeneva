@@ -2,6 +2,7 @@ package genevahttp
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"net"
 	"net/http"
@@ -31,7 +32,12 @@ type listener struct {
 // NewListener returns a net.Listener that encrypts the body of the request (wrapped request)
 // using AES with the provided key. key must be 16, 24 or 32 bytes long to select AES-128,
 // AES-192, or AES-256 respectively with longer keys being more secure.
-func NewListener(network, address string, encryptionKey []byte) (net.Listener, error) {
+func NewListener(network, address string, encryptionKey string) (net.Listener, error) {
+	key, err := hex.DecodeString(encryptionKey)
+	if err != nil {
+		return nil, err
+	}
+
 	l, err := net.Listen(network, address)
 	if err != nil {
 		return nil, err
@@ -42,7 +48,7 @@ func NewListener(network, address string, encryptionKey []byte) (net.Listener, e
 		listener:      l,
 		connections:   make(chan net.Conn, 100),
 		close:         make(chan struct{}),
-		encryptionKey: encryptionKey,
+		encryptionKey: key,
 	}
 
 	srv := &http.Server{

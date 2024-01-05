@@ -19,7 +19,7 @@ func TestWebsocket(t *testing.T) {
 	secondResp := "segfault"
 
 	// Create a listener that will accept connections from the client.
-	ll, err := NewListener("tcp", ":8080", nil)
+	ll, err := NewListener("tcp", ":8080", "")
 	require.NoError(t, err, "Failed to create listener")
 
 	go startTestServer(ll, t, []string{firstResp, secondResp})
@@ -93,12 +93,11 @@ func (h *handler) handleConn(c net.Conn, t *testing.T) error {
 
 func reply(c net.Conn, resp string, t *testing.T) error {
 	buf := make([]byte, 1024)
-	n, err := c.Read(buf)
+	_, err := c.Read(buf)
 	if err != nil {
 		return fmt.Errorf("Failed to read: %w", err)
 	}
 
-	buf = buf[:n]
 	_, err = c.Write([]byte(resp))
 	if err != nil {
 		return fmt.Errorf("Failed to write: %w", err)
