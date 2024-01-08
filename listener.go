@@ -29,18 +29,18 @@ type listener struct {
 	encryptionKey []byte
 }
 
-// NewListener returns a net.Listener that encrypts the body of the request (wrapped request)
-// using AES with the provided key. key must be 16, 24 or 32 bytes long to select AES-128,
-// AES-192, or AES-256 respectively with longer keys being more secure.
-func NewListener(network, address string, encryptionKey string) (net.Listener, error) {
-	key, err := hex.DecodeString(encryptionKey)
-	if err != nil {
-		return nil, err
-	}
-
-	l, err := net.Listen(network, address)
-	if err != nil {
-		return nil, err
+// WrapListener wraps l in a net.Listener to handle requests sent by a lantern-algeneva client. If
+// encryptionKey is not empty, the returned net.Listener will also decrypt the body of the request
+// (wrapped request) using AES with the provided key. key must be 16, 24 or 32 bytes long to select
+// AES-128, AES-192, or AES-256 respectively with longer keys being more secure.
+func WrapListener(l net.Listener, encryptionKey string) (net.Listener, error) {
+	var key []byte
+	if encryptionKey != "" {
+		var err error
+		key, err = hex.DecodeString(encryptionKey)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	l = &innerListener{l}
@@ -51,6 +51,7 @@ func NewListener(network, address string, encryptionKey string) (net.Listener, e
 		encryptionKey: key,
 	}
 
+	// create a server that handles websocket connections and converts them to net.Conn
 	srv := &http.Server{
 		Handler:      http.HandlerFunc(ll.handleFunc),
 		ReadTimeout:  10 * time.Second,
@@ -109,11 +110,14 @@ func (ll *listener) handleFunc(w http.ResponseWriter, r *http.Request) {
 	c := websocket.NetConn(ctx, wsc, websocket.MessageBinary)
 
 	if ll.encryptionKey != nil {
-		if c, err = encryptConn(c, ll.encryptionKey); err != nil {
+		ec, err := encryptConn(c, ll.encryptionKey)
+		if err != nil {
 			c.Close()
 			cancel()
 			return
 		}
+
+		c = ec
 	}
 
 	ll.connections <- c
@@ -130,5 +134,6 @@ func (il *innerListener) Accept() (net.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &conn{Conn: c, isClient: false}, nil
 }

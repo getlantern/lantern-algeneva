@@ -19,7 +19,10 @@ func TestWebsocket(t *testing.T) {
 	secondResp := "segfault"
 
 	// Create a listener that will accept connections from the client.
-	ll, err := NewListener("tcp", ":8080", "")
+	l, err := net.Listen("tcp", ":8080")
+	require.NoError(t, err)
+
+	ll, err := WrapListener(l, "")
 	require.NoError(t, err, "Failed to create listener")
 
 	go startTestServer(ll, t, []string{firstResp, secondResp})
