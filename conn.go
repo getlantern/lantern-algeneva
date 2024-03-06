@@ -2,117 +2,142 @@ package genevahttp
 
 import (
 	"bytes"
-	"errors"
 	"net"
+	"sync/atomic"
 
 	"github.com/getlantern/algeneva"
 )
 
-// conn is a wrapper around a net.conn. conn behaves differently depending on whether it is a
-// client or server connection. For client connections, conn will apply the configured geneva
-// strategy to the request if it hasn't already been upgraded to a websocket connection. For server
-// connections, conn will unwrap the request, removing the modified false headers added by clients.
-type conn struct {
+// httpTransformConn is a wrapper around a net.conn. httpTransformConn will apply the geneva
+// strategy, httpTransform, to the first request before writing it to the wrapped net.Conn.
+// Subsequent requests are written directly to the wrapped net.Conn.
+type httpTransformConn struct {
 	// underlying connection
 	net.Conn
-	// geneva strategy to apply to requests if we're a client. This is ignored if we're a server.
+	// httpTransformConn is the geneva strategy to apply to the first request.
 	httpTransform *algeneva.HTTPStrategy
-
-	isClient bool
-	upgraded bool
+	// buf is a buffer to write the first request into until we can apply the geneva strategy. Once
+	// all of the request header is writen to buf, we'll apply the geneva strategy and write the
+	// transformed request to net.Conn.
+	buf *bytes.Buffer
+	// transformedFirst is a flag to indicate if the first request has been transformed.
+	transformedFirst atomic.Bool
 }
 
-// Read reads data from the connection. For server connections, read will unwrap the request,
-// removing the modified false headers added by clients. Once the connection is upgraded, read
-// will read the data as is.
-func (c *conn) Read(b []byte) (n int, err error) {
-	if c.upgraded {
-		// we don't need to modify the request so just read
-		return c.Conn.Read(b)
-	}
-
-	if c.isClient {
-		// if we're a client, we need to check if the connection was upgraded
-		n, err = c.Conn.Read(b)
-		if err == nil && bytes.Contains(b, []byte("101 Switching Protocols")) {
-			c.upgraded = true
-		}
-		return n, err
-	}
-
-	// if we're a server, we need to check if the request is wrapped and unwrap it
-	// some of the geneva strategies increase the size of the request significantly and the buffer
-	// passed in may not be large enough so we have to create our own buffer to read into. We copy
-	// the unwrapped request into the buffer later.
-	buf := make([]byte, 16384) // 16kb
-	n, err = c.Conn.Read(buf)
-	if err != nil {
-		return n, err
-	}
-
-	unwrapped, err := unwrap(buf[:n])
-	if err != nil {
-		return n, err
-	}
-	n = copy(b, unwrapped)
-	return n, err
-}
-
-// Write writes data to the connection. For client connections, write will apply the configured
-// geneva strategy to the request if it hasn't already been upgraded to a websocket connection.
-// Once the connection is upgraded, write will write the data as is.
-func (c *conn) Write(b []byte) (n int, err error) {
-	if c.upgraded {
-		// we don't need to modify the request so just write
+// Write writes data to the connection. If the first request has not been transformed and
+// c.httpTransform is not nil, Write will buffer the data until all the request headers have been
+// written. Once all the headers have been written, Write will apply the geneva strategy and write
+// the transformed request to the underlying connection. Otherwise, Write will write the data to
+// directly to the wrapped net.Conn as is.
+func (c *httpTransformConn) Write(b []byte) (n int, err error) {
+	if c.transformedFirst.Load() || c.httpTransform == nil {
+		// The first request has been transformed, so we write directly to c.Conn.
 		return c.Conn.Write(b)
 	}
-	// apply the transform if we're a client
-	if c.isClient && c.httpTransform != nil {
-		b, err = applyTransformAndWrap(b, c.httpTransform)
-		if err != nil {
-			return 0, err
-		}
+
+	// The first request has not been transformed, so we write to buf and check if we recieved all
+	// of the request headers.
+	if c.buf == nil {
+		c.buf = &bytes.Buffer{}
 	}
 
-	n, err = c.Conn.Write(b)
+	c.buf.Write(b)
+	if !bytes.Contains(b, []byte("\r\n\r\n")) {
+		// We haven't recieved all of the headers yet, so we return early.
+		return len(b), nil
+	}
+
+	req, err := c.httpTransform.Apply(c.buf.Bytes())
 	if err != nil {
-		// TODO: should we return the number of bytes of the original request that were written or
-		// the transformed request?
+		return len(b), err
+	}
+
+	_, err = c.Conn.Write(req)
+	if err != nil {
+		return len(b), err
+	}
+
+	// The first request has been transformed, so we set transformedFirst to true and clear the
+	// buffer.
+	c.transformedFirst.Store(true)
+	c.buf.Reset()
+	c.buf = nil
+	return len(b), nil
+}
+
+// normalizationConn is a wrapper around a net.conn. normalizationConn will attempt to normalize
+// the first request read from the wrapped net.Conn.
+//
+// Important note: Depending on the strategy the client used to transform the request, the exact
+// original request may not be recoverable. normalizationConn makes no guarantees about the
+// original request and only guarantees that the request will be valid and well-formed.
+type normalizationConn struct {
+	// underlying connection
+	net.Conn
+	// buf will hold the normalized first request and calls to Read will read from buf until it is
+	// empty.
+	buf *bytes.Buffer
+	// normalizedFirst is a flag to indicate if the first request has been normalized.
+	normalizedFirst atomic.Bool
+}
+
+// Read reads data from the connection. If the first request has not been normalized, Read will
+// attempt to normalize it. The first call to Read may take slightly longer than expected as it
+// must read the entire first request before Read can normalizing it.
+func (nc *normalizationConn) Read(b []byte) (n int, err error) {
+	if nc.normalizedFirst.Load() {
+		// The first request has been normalized, so we read from buf if it's not empty.
+		if nc.buf.Len() > 0 {
+			n, _ = nc.buf.Read(b)
+		}
+
+		if n < len(b) {
+			// The caller requested more data than what's in buf, so we read off the underlying
+			// connection if there's more data available.
+			nn, err := nc.Conn.Read(b[n:])
+			return n + nn, err
+		}
+
 		return n, err
 	}
 
-	// if we're a server, mark the connection as upgraded if the response contains the upgrade header
-	if !c.isClient && bytes.Contains(b, []byte("101 Switching Protocols")) {
-		c.upgraded = true
+	if nc.buf == nil {
+		nc.buf = &bytes.Buffer{}
 	}
 
+	// read the whole first request so we can normalize it.
+	n, err = nc.readAvailable()
+	if err != nil {
+		n, _ = nc.buf.Read(b)
+		return n, err
+	}
+
+	norm, err := algeneva.NormalizeRequest(nc.buf.Bytes()[:n])
+	if err != nil {
+		n, _ = nc.buf.Read(b)
+		return n, err
+	}
+
+	nc.normalizedFirst.Store(true)
+
+	// Clear the buffer so we can reuse it for storing the normalized request.
+	nc.buf.Reset()
+	nc.buf.Write(norm)
+	n, _ = nc.buf.Read(b)
 	return n, err
 }
 
-// applyTransformAndWrap uses the geneva strategy to transform a copy of the startline and headers
-// and returns a new request with the transformed headers and the original request as the body.
-func applyTransformAndWrap(b []byte, transform *algeneva.HTTPStrategy) ([]byte, error) {
-	modb, err := transform.Apply(b)
-	if err != nil {
-		return b, err
+// readAvailable reads all available data from the connection and writes it to the buffer. Unlike
+// other Read/copy methods that read until an io.EOF is recieved, readAvailable will read until no
+// more data is available to be read. readAvailable returns the total number of bytes read and any
+// error that occurred.
+func (nc *normalizationConn) readAvailable() (int, error) {
+	buf := make([]byte, 1024)
+	for {
+		n, err := nc.Conn.Read(buf)
+		nc.buf.Write(buf[:n])
+		if err != nil || n < 1024 {
+			return nc.buf.Len(), err
+		}
 	}
-
-	modb = append(modb, b...)
-	return modb, nil
-}
-
-// unwrap unwraps the body of a request discarding the headers. If the request is not wrapped, the
-// original request is returned.
-func unwrap(b []byte) ([]byte, error) {
-	idx := bytes.Index(b, []byte("\r\n\r\n"))
-	if idx == -1 {
-		return b, errors.New("invalid request")
-	}
-
-	if idx+4 == len(b) {
-		// request is not wrapped
-		return b, nil
-	}
-
-	return b[idx+4:], nil
 }
