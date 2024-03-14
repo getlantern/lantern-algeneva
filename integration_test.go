@@ -25,7 +25,7 @@ func TestWebsocket(t *testing.T) {
 	l, err := net.Listen("tcp", ":8080")
 	require.NoError(t, err)
 
-	ll, _, err := WrapListener(l)
+	ll, _ := WrapListener(l)
 	require.NoError(t, err, "Failed to create listener")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)

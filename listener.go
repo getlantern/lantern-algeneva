@@ -30,11 +30,13 @@ type listener struct {
 }
 
 // WrapListener wraps l in a net.Listener to handle requests sent by a lantern-algeneva client.
-func WrapListener(l net.Listener) (net.Listener, <-chan error, error) {
+// WrapListener returns the wrapped listener and a channel to receive any errors encountered when
+// a client tries to connect.
+func WrapListener(l net.Listener) (net.Listener, <-chan error) {
 	l = &innerListener{l}
 	ll := &listener{
 		listener:    l,
-		connections: make(chan net.Conn, 100), // size is arbitrary, no particular reason for 100
+		connections: make(chan net.Conn),
 		closed:      make(chan struct{}),
 		wsConnErrC:  make(chan error, 20),
 	}
@@ -49,28 +51,17 @@ func WrapListener(l net.Listener) (net.Listener, <-chan error, error) {
 		WriteTimeout: 10 * time.Second,
 	}
 	go func() {
-		// Save the channel so we can set ll.connections to nil when the server is closed and still
-		// close all the connections.
-		connC := ll.connections
-
 		ll.srvErr = srv.Serve(l)
-
-		// set ll.connections to nil to prevent any connections added before the server was
-		// closed from being handed out.
-		ll.connections = nil
 		close(ll.closed)
-
-		// since each connection was hijacked from the server we have to close all the connections
-		// ourselves
-		closeAllConns(connC)
 	}()
 
 	ll.srv = srv
 
-	return ll, ll.wsConnErrC, nil
+	return ll, ll.wsConnErrC
 }
 
-// Accept implements net.Listener.
+// Accept implements net.Listener. It is the caller's responsibility to close the connection when
+// done.
 func (ll *listener) Accept() (net.Conn, error) {
 	select {
 	case c := <-ll.connections:
@@ -80,7 +71,8 @@ func (ll *listener) Accept() (net.Conn, error) {
 	}
 }
 
-// Close implements net.Listener.
+// Close implements net.Listener. Any connections handed out by ll.Accept will not be closed and
+// must be closed manually.
 func (ll *listener) Close() error {
 	ll.mx.Lock()
 	defer ll.mx.Unlock()
@@ -88,25 +80,7 @@ func (ll *listener) Close() error {
 	case <-ll.closed:
 		return nil
 	default:
-		err := ll.srv.Close()
-
-		// set ll.connections to nil to prevent any connections added before the server was
-		// closed from being handed out.
-		ll.connections = nil
-
-		return err
-	}
-}
-
-// closeAllConns calls Close on all connections in conns.
-func closeAllConns(conns chan net.Conn) {
-	for {
-		select {
-		case c := <-conns:
-			c.Close()
-		default:
-			return
-		}
+		return ll.srv.Close()
 	}
 }
 
@@ -124,18 +98,14 @@ func (ll *listener) handleFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// maybe TODO: add idle timeout to the connection to avoid leaking connections if it never gets
-	// manually closed.
 	c := websocket.NetConn(context.Background(), wsc, websocket.MessageBinary)
 
-	// we need to make sure we can send the connection to ll.connections in case the listener is
-	// closed before the connection is added.
-	rcxt := r.Context()
+	// Wait for someone to call ll.Accept to hand out the connection or for the server to close.
+	rctx := r.Context()
 	select {
 	case ll.connections <- c:
-	case <-rcxt.Done():
+	case <-rctx.Done():
 		c.Close()
-		sendError(rcxt.Err(), ll.wsConnErrC)
 	}
 }
 
