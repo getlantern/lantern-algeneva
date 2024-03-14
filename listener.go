@@ -53,6 +53,7 @@ func WrapListener(l net.Listener) (net.Listener, <-chan error) {
 	go func() {
 		ll.srvErr = srv.Serve(l)
 		close(ll.closed)
+		close(ll.wsConnErrC)
 	}()
 
 	ll.srv = srv
