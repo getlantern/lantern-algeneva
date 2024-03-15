@@ -2,7 +2,6 @@ package genevahttp
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -47,25 +46,26 @@ func (c *httpTransformConn) Write(b []byte) (n int, err error) {
 		c.buf = &bytes.Buffer{}
 	}
 
-	c.buf.Write(b)
+	nw, _ := c.buf.Write(b)
 	// We need to check if we've recieved all of the headers before we can apply the geneva
 	// strategy. Since the headers are terminated by a string and not just one byte, we need to
 	// check c.buf, as '\r\n\r\n' may be split between two writes.
 	if !bytes.Contains(c.buf.Bytes()[c.eohCheckPtr:], []byte("\r\n\r\n")) {
 		// We haven't recieved all of the headers yet, so update eohCheckPtr to the end of the buffer
 		// but back up 3 bytes in case some of the token was written already.
-		c.eohCheckPtr += len(b) - 3
-		return len(b), nil
+		shift := c.buf.Len() - 3
+		c.eohCheckPtr += max(shift, 0)
+		return nw, nil
 	}
 
 	req, err := c.httpTransform.Apply(c.buf.Bytes())
 	if err != nil {
-		return len(b), err
+		return nw, fmt.Errorf("error applying geneva strategy: %w", err)
 	}
 
 	_, err = c.Conn.Write(req)
 	if err != nil {
-		return len(b), err
+		return nw, err
 	}
 
 	// The first request has been transformed, so we set transformedFirst to true and clear the
@@ -73,7 +73,7 @@ func (c *httpTransformConn) Write(b []byte) (n int, err error) {
 	c.transformedFirst = true
 	c.buf.Reset()
 	c.buf = nil
-	return len(b), nil
+	return nw, nil
 }
 
 // normalizationConn is a wrapper around a net.conn. normalizationConn will attempt to normalize
@@ -165,7 +165,7 @@ func readAtLeastUntil(src io.Reader, dst io.Writer, token []byte) (int, error) {
 				return written, fmt.Errorf("error writing to dst: %w", ew)
 			case nr != nw:
 				// special case where we didn't write all of the data to dst but no error was returned.
-				return written, errors.New("failed to write all data to dst")
+				return written, fmt.Errorf("failed to write all data to dst: %w", io.ErrShortWrite)
 			case bytes.Contains(buf[:wptr], token):
 				// Token found in the read data.
 				return written, nil
@@ -183,7 +183,7 @@ func readAtLeastUntil(src io.Reader, dst io.Writer, token []byte) (int, error) {
 				return written, fmt.Errorf("token not found: %w", io.EOF)
 			}
 
-			return written, er
+			return written, fmt.Errorf("error reading from src: %w", er)
 		}
 	}
 }

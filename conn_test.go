@@ -3,9 +3,12 @@ package genevahttp
 import (
 	"bytes"
 	"io"
+	"net"
 	"testing"
 
+	"github.com/getlantern/algeneva"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockReader struct {
@@ -74,4 +77,22 @@ func TestReadAtLeastUntil(t *testing.T) {
 			assert.Contains(t, dst.String(), string(tt.token))
 		})
 	}
+}
+
+func TestHTTPTransformConnShortWrite(t *testing.T) {
+	wrapped, _ := net.Pipe()
+
+	s, err := algeneva.NewHTTPStrategy(algeneva.Strategies["China"][9])
+	require.NoError(t, err)
+
+	htc := httpTransformConn{
+		Conn:          wrapped,
+		httpTransform: s,
+	}
+
+	_, err = htc.Write([]byte{'h'})
+	require.NoError(t, err)
+
+	_, err = htc.Write([]byte{'i'})
+	require.NoError(t, err)
 }
