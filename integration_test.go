@@ -55,10 +55,16 @@ func TestWebsocket(t *testing.T) {
 	// give the server time to start
 	time.Sleep(time.Second)
 
-	opts := DialerOpts{AlgenevaStrategy: algeneva.Strategies["China"][17]}
+	dialer := &mockDialer{}
+	opts := DialerOpts{
+		AlgenevaStrategy: algeneva.Strategies["China"][17],
+		Dialer:           dialer,
+	}
 	c, err := DialContext(ctx, "tcp", "localhost:8080", opts)
 	require.NoError(t, err, "Failed to dial")
 	defer c.Close()
+
+	assert.True(t, dialer.used, "mockDialer was not used")
 
 	t.Log("dialer connected")
 	t.Log("testing communication..")
@@ -71,6 +77,19 @@ func TestWebsocket(t *testing.T) {
 		require.NoError(t, err, "client: Failed to read")
 		require.Equal(t, resp, string(buf[:n]))
 	}
+}
+
+type mockDialer struct {
+	used bool
+}
+
+func (m *mockDialer) Dial(network, addr string) (net.Conn, error) {
+	return m.DialContext(context.Background(), network, addr)
+}
+
+func (m *mockDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	m.used = true
+	return (&net.Dialer{}).DialContext(ctx, network, addr)
 }
 
 // startTestServer starts a test server to handle a websocket connection. ctx is used to close the
