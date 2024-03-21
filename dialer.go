@@ -10,6 +10,12 @@ import (
 	"nhooyr.io/websocket"
 )
 
+// Dialer is the interface used to establish connections to the server.
+type Dialer interface {
+	Dial(network, address string) (net.Conn, error)
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+}
+
 // DialerOpts contains options for the Dialer.
 type DialerOpts struct {
 	// AlgenevaStrategy is the geneva HTTPStrategy to apply to the connect request.
@@ -18,7 +24,7 @@ type DialerOpts struct {
 	// Dialer is the dialer used to connect to the server. If AlgenevaStrategy is not empty, the
 	// strategy will be applied to the request made by Dialer.Dial for all connections. If nil, the
 	// default dialer is used.
-	Dialer *net.Dialer
+	Dialer Dialer
 }
 
 // Dial performs a websocket handshake over TCP with the given address. If opts.AlgenevaStrategy is
