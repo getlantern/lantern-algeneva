@@ -101,10 +101,9 @@ func (ll *listener) handleFunc(w http.ResponseWriter, r *http.Request) {
 	c := websocket.NetConn(context.Background(), wsc, websocket.MessageBinary)
 
 	// Wait for someone to call ll.Accept to hand out the connection or for the server to close.
-	rctx := r.Context()
 	select {
 	case ll.connections <- c:
-	case <-rctx.Done():
+	case <-ll.closed:
 		c.Close()
 	}
 }
