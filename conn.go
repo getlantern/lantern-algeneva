@@ -65,7 +65,7 @@ func (c *httpTransformConn) Write(b []byte) (n int, err error) {
 
 	_, err = c.Conn.Write(req)
 	if err != nil {
-		return nw, err
+		return nw, fmt.Errorf("error writing transformed request: %w", err)
 	}
 
 	// The first request has been transformed, so we set transformedFirst to true and clear the

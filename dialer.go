@@ -55,7 +55,7 @@ func DialContext(ctx context.Context, network, address string, opts DialerOpts) 
 		return nil, err
 	}
 
-	return websocket.NetConn(ctx, wsc, websocket.MessageBinary), nil
+	return websocket.NetConn(context.Background(), wsc, websocket.MessageBinary), nil
 }
 
 // dialContext returns a dial function that connects to the given address and wraps the resulting
