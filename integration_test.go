@@ -19,52 +19,50 @@ import (
 
 const (
 	certPEM = `-----BEGIN CERTIFICATE-----
-MIIDWTCCAkGgAwIBAgIUbHYEeCl2wo1zQrlJOfqSfGHruQkwDQYJKoZIhvcNAQEL
-BQAwPDELMAkGA1UEBhMCVVMxDzANBgNVBAgMBk9yZWdvbjENMAsGA1UEBwwEVGVz
-dDENMAsGA1UECgwEVGVzdDAeFw0yNDA0MTYxNzEzMzVaFw0zNDA0MTQxNzEzMzVa
-MDwxCzAJBgNVBAYTAlVTMQ8wDQYDVQQIDAZPcmVnb24xDTALBgNVBAcMBFRlc3Qx
-DTALBgNVBAoMBFRlc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCI
-DViDsv0oqfNe8C/2OZv6WaxNaPd9ZEQ+Gm5ExxkxhcLoCKDKvKnKO9WUmpHOE/wm
-dCRlC0AWjJfxadX1vSwOb40I1AZJvwFht4+jotXsXJdsyLzldkILdIPDAcGltJp2
-kQl6si5FSSfvREnLkbJooUBEeRQPG8/USUGg9uoRuY5uuaTeGgREngzjuGAyI3O4
-zrIPcitVC/cKwqAFwQrA5i2/Ax+JardkYmfpECmq351cGtq10w5/r2d7c6aC3TCu
-FXlHUoLWC2FBEg6ENkcPWrVc/4T1qprQpZXHAWSz88dLeyCMnfqkLrj/fxvx8MH9
-C1FR1/8NqAkdgqF5csCLAgMBAAGjUzBRMB0GA1UdDgQWBBTfBNWqfSYRYNvqk+3G
-TIsqa1/7RjAfBgNVHSMEGDAWgBTfBNWqfSYRYNvqk+3GTIsqa1/7RjAPBgNVHRMB
-Af8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQB8JpOcCGndN8IyzLkO1VGQrlGH
-XbGefanmWXOV7XPoq09OdJGuf8mbkMARLi0MtoN3jJgJWICo4fDKAdEMw76X1RWp
-Hh3GS23I6fKWW/AANsK+ctMZgwnkMWPOcKZosWR4yLdblTMp2wtxND0WINnLL4D7
-8/BPT1d0Ikb5SUb55cMBeGY4KBT0F/ZSfPxKNuB24RHVYhRkH+3dn4Dzpf7Fq5eT
-eVWrL9DTIm0gObJVqZuqrxgokIxo6KusjD602Zixph2G35L9TUbDZ3A8Cpl4fxx6
-HxxRyPFc01MTjCIY+DS36pZNshz6wZhFIOrjDuMOm0ph7Ki7g/7c5axe/DWI
+MIIC7TCCAdWgAwIBAgIUPdNVO5iYFFIOZkNR7PP2M+Vn4fswDQYJKoZIhvcNAQEL
+BQAwFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI0MDQxODE5MDQ1NVoXDTM0MDQx
+NjE5MDQ1NVowFDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANBgkqhkiG9w0BAQEF
+AAOCAQ8AMIIBCgKCAQEArGzK/NbZkfJzKAMryAiDJwqYMmZUL1okHDshfAD1ECMP
+4yCq3DouIXBGNY0s9Y11j/N4qzToCfMWfsnTT0l8nyWbHuAlcMPGC8pFzCr4ZrsU
+q3QgvLM0czqv58TD8XO0DvbgsHs3EFB6kZEyLVzp4UThveUNcUFMz9+AskegKtJx
+/s/N9xHh50aHTKeiyZ6sbL6O61Ojthc7wfwUrlHsKY9kInv/lyriLSaz6agwZR7P
+zgSRP06SFkzOV6wsqAEOyEroeFjjyw7xD6AeRqp4HRIFNb3jh25bTdQ5xBHv6rpi
+Q+VMQE8wXNFHSbBpZGi1A0hMH4MDNFniy+KhV8bHSQIDAQABozcwNTAUBgNVHREE
+DTALgglsb2NhbGhvc3QwHQYDVR0OBBYEFG76xcV0Ggi/GwSxHzHmosDoy/UtMA0G
+CSqGSIb3DQEBCwUAA4IBAQCVTNmUoca7p+bu9F8VguFZOlDcXDAw7k2ihbR4IHVZ
+Jahubgo5sktkxZ7tbJJpN3IFQR1ItDaTqFNHL8pruKUwCqOoIkaEa7tFeVZx1JbW
+VfpwyDS1eqokBB6W2O7cIi7dOnH12YfLXU0Tm4l3Mn4Nh7RZqzixm0frH7ntLzw2
+ioVad2EEYqB8DwCZrmEmA5tiDgqt0zBonynmlj+5V85mHlGVbVMsYr9f5ZKOi7Xl
+dxwxX30SquVfeIxwMUCudM6TQ6DVPYjTaqK32iSkpuWi03i9jmWoQIqPwk6qaja+
+WufWjiCRIm/9mSnXKSTzp0uQ+L09bcIbQ4ELGjSxu2BN
 -----END CERTIFICATE-----`
 	keyPEM = `-----BEGIN PRIVATE KEY-----
-MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCIDViDsv0oqfNe
-8C/2OZv6WaxNaPd9ZEQ+Gm5ExxkxhcLoCKDKvKnKO9WUmpHOE/wmdCRlC0AWjJfx
-adX1vSwOb40I1AZJvwFht4+jotXsXJdsyLzldkILdIPDAcGltJp2kQl6si5FSSfv
-REnLkbJooUBEeRQPG8/USUGg9uoRuY5uuaTeGgREngzjuGAyI3O4zrIPcitVC/cK
-wqAFwQrA5i2/Ax+JardkYmfpECmq351cGtq10w5/r2d7c6aC3TCuFXlHUoLWC2FB
-Eg6ENkcPWrVc/4T1qprQpZXHAWSz88dLeyCMnfqkLrj/fxvx8MH9C1FR1/8NqAkd
-gqF5csCLAgMBAAECggEAINDTQkTocif39zTI5MOFf0+k0zEXzOtj2HTolvdM+Nhy
-KCR4oB38eDaRcBwOQh4o6h+GbcbWaPn1ZjnobTL5TuwSIQh/Eceb7jVn1Ijgv3ef
-4JHUmiY5jOjIJT+ltTHINgQKvMkAhx67nqcig5L7bOhEB6AKuhAzw1j+FvSnhamZ
-hbQFiB78hRu35yh79XEbUjPmFts9QCnuqtAOI+xCjvlgEhNS2UhmAzXwSNuYS4Ip
-tCIC/rDimY/O5V8imo3Dx+Jf2lbfULLsNHDD6v+/3uSE/c0rdqGs85mfkroFBsYF
-zaijBURNTMLilC4Xx9PzSjY7Sx5DV474m8Quegy1AQKBgQC/dEoHp5CFa1wUzCwt
-g15qugOgO0ikEHUBvzF/baHkBwigX3eJP/3mf98MGrkYxM1gKLdvKa2Ko6NGtEWQ
-dNZNh4bcMV2Us9QJSi/X9zzZrNo6xkV4Y0OkQS8+VHqdl08NoCeHAfUt76GDH9MP
-j9KNMjlofuIzHL34I9VGAY1PAQKBgQC164DuQgC0FnIwZ0joEO8EGXRZgMUHkKdm
-EGMotUxeGbtdPB7prB7beWSjF0aJZRBVLjXrKuol7imtHI8Jd+UNBRy6RgT3/LBa
-YS/k2fx3RwuYLf35XjZJxeygPM6CPRKlgwbTQOcf2TzvaK17dPcNo3t6PXC5aLHF
-NDFK8iPbiwKBgE5hvrk5ifqFhLJjEKclhG8vbrKX8tpwfmbTruEbsk7X7lkyHI9N
-apaGvXuIKUWRtP9sTAUvzAPZkMwum9hTbTVaigT2FPj/UoznGYVSjFAV61ZqvCBY
-i2Xg5gWfsn94Zf4PFn+4dndzBu3XBqL1X988s7IrWFJSrxe7G+LIWeEBAoGALajj
-XmmghZLQrEdwLBb79rpw0noYedKbwWlBihkfBstMlJUfaSTzRcDNOoYABUIhfE+x
-5smJpWWGflWZrRWznrX2xOYIHzoEBVs5SyZPUJy7U0HP6gP0ekW8I2e/qT6s7G/b
-ibBTklHTEn/icwcjbv/mYQMExPR7EfUMnjPyPgsCgYBPS3FIH0FseVR4f7Sy/Ru/
-tsQthtVVAtqmp7aHnWehhWOn8+v4Lrl7UqGu1oSkzX2eSz9oTTyjljej4vtcf0KI
-CeST/HTEWkTNddorjhnZhk1hHN4T9FNr3X89bPZK4lfeOgtyaWQtBLnHInfT1rnr
-v8YjBPMaZmsPom2vPUa9qQ==
+MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCsbMr81tmR8nMo
+AyvICIMnCpgyZlQvWiQcOyF8APUQIw/jIKrcOi4hcEY1jSz1jXWP83irNOgJ8xZ+
+ydNPSXyfJZse4CVww8YLykXMKvhmuxSrdCC8szRzOq/nxMPxc7QO9uCwezcQUHqR
+kTItXOnhROG95Q1xQUzP34CyR6Aq0nH+z833EeHnRodMp6LJnqxsvo7rU6O2FzvB
+/BSuUewpj2Qie/+XKuItJrPpqDBlHs/OBJE/TpIWTM5XrCyoAQ7ISuh4WOPLDvEP
+oB5GqngdEgU1veOHbltN1DnEEe/qumJD5UxATzBc0UdJsGlkaLUDSEwfgwM0WeLL
+4qFXxsdJAgMBAAECggEAEBpO8ML96bfrUkLNjW5iFTzTju1okk2ITsyk6WhLerjT
+jIIqAsw6L6xFGk43cy1FW+7Ah7i2rOszYB7oKaDyzwgbjwwe4wOdlM9Mqm8e6LUz
+DnoXbpgL33ENKYeCRyPnnngm7sRrFY52i+6z8XGadAvTS0E/eqK/EjDM25l911HN
+zlKcvbePI0z2APUsWGl/13Qd7ks+WDytg1efFJCOPbiYYM5vpKfy9bzf2RQ7IRsr
+5EPyHhOyFVd6UrzvkvjBvaouygM7u6CTWkYd3Z8ARxRdGPJN7iMzTZFDAx03Eq3A
+gf29ffbHN8k70973X6KH32LUd1NZvrGTlFGeH+WLgQKBgQDTdP5j4ckQ5oQwMqM4
+k9Ihx/ILGIFiG1WUUwLtSv3IN0YeyNpR1QBZwP+zSoRIZQkbKuFII+xxBa2RTrFu
+MyRTf7rAK/R0AYP/htt9TdFWHssXDg/fnGqUVfJwjNMYZqwcpKND4eDynB3ThdKV
+Of8uWbpttIjScfAMCEtkepTuYQKBgQDQvvZS4GHQXErplPrtsEt5jz0uCnGGvqno
+LihA/8Ewy+rHxQzXOclYBW7bZdr5B9S/uVVrchkHx3bz1FRtnATgUwCG0YaOk9ho
+Q/brZIP6W/Ei7WCkIy62+rPbZQlBDIXDTQ7mexIRj2kJsDdz+ybwDExlN/o1W8c/
+UGmw3qFx6QJ/Fk1Ah0hI7H9jcbHlhRISF33/CSyMeMxpOjuHE3/VREiQHK8SV48f
+elfgoAg762a8jyD2oaUoSsNOiwTBsd2y9xuBlsMMBTAju899VrneWjblNIlHI05b
+70khSL2RhgFOJbc3gPFRyESu4KA8lYCIaVsNToS76XYa2yoEyZQkIQKBgQCGk4Zk
+eco1tTqKioSXdj/CV8k+hHcaQpNxX0iOVxQqrFxpfC1CGDwpJh+JDIp2YEkVbZuX
+UJC4hiy3F51yqNIv+PLu9+fCxagP2Dk5Gq1HW70DInxadWApkUkg2Wt052jZNzWy
++4bzkTxLhbLKcBFzUspxuvvxKIE03Ve2MmFs+QKBgQChvuTCmiHoO7el2HfR8NOZ
+phEh0yWTALHVnSJOcrxlB30NrSC25v7AWQ08tkPlxr6Znrs8UPS/klFDBJKc5S9V
+IlLr8ERn4mNnlqeIjsKLuB6LSGZZvAzaomNJ6oEdEq0MLCletAheWiJNt+20zwVB
+G02fP/oUEPDTYjlf6xAS1g==
 -----END PRIVATE KEY-----`
 )
 
@@ -75,16 +73,14 @@ var testMsgs = map[string]string{
 
 func TestWebsocket(t *testing.T) {
 	// Create a listener that will accept connections from the client.
-	l, err := net.Listen("tcp", ":8080")
+	l, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err, "Failed to create listener")
 
 	cert, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
 	require.NoError(t, err, "Failed to create tls keypair")
 
 	tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}}
-
 	ll, _ := WrapListener(l, tlsConfig)
-	require.NoError(t, err, "Failed to wrap listener")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 
@@ -117,8 +113,8 @@ func TestWebsocket(t *testing.T) {
 	require.True(t, rootCertPool.AppendCertsFromPEM([]byte(certPEM)))
 
 	tlsConfig = &tls.Config{
-		RootCAs:            rootCertPool,
-		InsecureSkipVerify: true,
+		RootCAs:    rootCertPool,
+		ServerName: "localhost",
 	}
 	dialer := &mockDialer{}
 	opts := DialerOpts{
@@ -126,7 +122,7 @@ func TestWebsocket(t *testing.T) {
 		Dialer:           dialer,
 		TLSConfig:        tlsConfig,
 	}
-	c, err := DialContext(ctx, "tcp", "localhost:8080", opts)
+	c, err := DialContext(ctx, "tcp", l.Addr().String(), opts)
 	require.NoError(t, err, "Failed to dial")
 	defer c.Close()
 

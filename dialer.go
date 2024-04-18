@@ -64,7 +64,7 @@ func DialContext(ctx context.Context, network, address string, opts DialerOpts) 
 
 	tlsConn := tls.Client(conn, opts.TLSConfig)
 	if err := tlsConn.Handshake(); err != nil {
-		tlsConn.Close() // not sure if this is necessary or if it's done by Handshake
+		tlsConn.Close()
 		return nil, err
 	}
 
