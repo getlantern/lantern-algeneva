@@ -2,6 +2,7 @@ package genevahttp
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -24,7 +25,8 @@ type DialerOpts struct {
 	// Dialer is the dialer used to connect to the server. If AlgenevaStrategy is not empty, the
 	// strategy will be applied to the request made by Dialer.Dial for all connections. If nil, the
 	// default dialer is used.
-	Dialer Dialer
+	Dialer    Dialer
+	TLSConfig *tls.Config
 }
 
 // Dial performs a websocket handshake over TCP with the given address. If opts.AlgenevaStrategy is
@@ -55,7 +57,18 @@ func DialContext(ctx context.Context, network, address string, opts DialerOpts) 
 		return nil, err
 	}
 
-	return websocket.NetConn(context.Background(), wsc, websocket.MessageBinary), nil
+	conn := websocket.NetConn(context.Background(), wsc, websocket.MessageBinary)
+	if opts.TLSConfig == nil {
+		return conn, nil
+	}
+
+	tlsConn := tls.Client(conn, opts.TLSConfig)
+	if err := tlsConn.Handshake(); err != nil {
+		tlsConn.Close()
+		return nil, err
+	}
+
+	return tlsConn, nil
 }
 
 // dialContext returns a dial function that connects to the given address and wraps the resulting

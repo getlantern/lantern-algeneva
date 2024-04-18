@@ -2,6 +2,7 @@ package genevahttp
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 	"net/http"
 	"sync"
@@ -26,19 +27,21 @@ type listener struct {
 	// connection.
 	wsConnErrC chan error
 	// srvErr will hold any error explaining why the server was closed.
-	srvErr error
+	srvErr    error
+	tlsConfig *tls.Config
 }
 
 // WrapListener wraps l in a net.Listener to handle requests sent by a lantern-algeneva client.
 // WrapListener returns the wrapped listener and a channel to receive any errors encountered when
 // a client tries to connect.
-func WrapListener(l net.Listener) (net.Listener, <-chan error) {
+func WrapListener(l net.Listener, tlsConfig *tls.Config) (net.Listener, <-chan error) {
 	l = &innerListener{l}
 	ll := &listener{
 		listener:    l,
 		connections: make(chan net.Conn),
 		closed:      make(chan struct{}),
 		wsConnErrC:  make(chan error, 20),
+		tlsConfig:   tlsConfig,
 	}
 
 	// Start a server to accept websocket connections and convert them to a normalizationConn.
@@ -99,6 +102,9 @@ func (ll *listener) handleFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c := websocket.NetConn(context.Background(), wsc, websocket.MessageBinary)
+	if ll.tlsConfig != nil {
+		c = tls.Server(c, ll.tlsConfig)
+	}
 
 	// Wait for someone to call ll.Accept to hand out the connection or for the server to close.
 	select {
