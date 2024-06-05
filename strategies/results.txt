@@ -1,0 +1,1 @@
+[[HTTP:version:*]-insert{%09:middle:value:14}-|] test message

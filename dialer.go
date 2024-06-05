@@ -3,12 +3,13 @@ package genevahttp
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"net"
 	"net/http"
 
 	"github.com/getlantern/algeneva"
 	"nhooyr.io/websocket"
+
+	"github.com/getlantern/lantern-algeneva/strategies"
 )
 
 // Dialer is the interface used to establish connections to the server.
@@ -37,15 +38,10 @@ func Dial(network, address string, opts DialerOpts) (net.Conn, error) {
 }
 
 // DialContext performs a websocket handshake over TCP with the given address using the provided
-// context. If opts.AlgenevaStrategy is not empty, it will be applied to the handshake request.
+// context.
 func DialContext(ctx context.Context, network, address string, opts DialerOpts) (net.Conn, error) {
-	if opts.AlgenevaStrategy != "" {
-		strategy, err := algeneva.NewHTTPStrategy(opts.AlgenevaStrategy)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create geneva strategy: %w", err)
-		}
-		opts.strategy = strategy
-	}
+	opts.AlgenevaStrategy = strategies.GetStrategy().String()
+	opts.strategy = strategies.GetStrategy()
 
 	wsopts := &websocket.DialOptions{
 		HTTPClient: &http.Client{
