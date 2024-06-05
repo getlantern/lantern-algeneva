@@ -11,13 +11,15 @@ import (
 
 const (
 	testStrategiesFile = "test_strategies.txt"
-	resultsFile        = "results.txt"
 )
 
-var strategy *algeneva.HTTPStrategy
+var (
+	strategy    *algeneva.HTTPStrategy
+	strategyStr string
+)
 
 func init() {
-	strat, err := readStrategy(testStrategiesFile)
+	strat, err := loadStrategy(testStrategiesFile)
 	if err != nil {
 		panic(err)
 	}
@@ -26,60 +28,63 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	strategyStr = strat
 }
 
-func readStrategy(filename string) (string, error) {
-	f, err := os.OpenFile(filename, os.O_RDONLY, 0644)
+func loadStrategy(filename string) (string, error) {
+	content, err := os.ReadFile(filename)
 	if err != nil {
-		return "", fmt.Errorf("failed to open test strategies file: %w", err)
-	}
-	defer f.Close()
-
-	buf := make([]byte, 1024)
-	n, err := f.Read(buf)
-	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read test strategies file: %w", err)
 	}
 
-	if n == 0 {
-		return "", errors.New("no strategies found in file")
+	lines := bytes.Split(content, []byte("\n"))
+	for _, strat := range lines {
+		strat = bytes.TrimSpace(strat)
+		if len(strat) == 0 {
+			break
+		}
+
+		if strat[0] != '=' {
+			return string(strat), nil
+		}
 	}
 
-	strat, _, _ := bytes.Cut(buf, []byte("\n"))
-	strat = bytes.TrimSpace(strat)
-
-	return string(strat), nil
+	return "", errors.New("no strategies found")
 }
 
 func GetStrategy() *algeneva.HTTPStrategy {
 	return strategy
 }
 
-func WriteResult(msg string) (int, error) {
-	f, err := os.OpenFile(resultsFile, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0644)
-	if err != nil {
-		return 0, fmt.Errorf("failed to open results file: %w", err)
-	}
-	defer f.Close()
-
-	n, err := f.WriteString("[" + strategy.String() + "] " + msg + "\n")
-	if err != nil {
-		return 0, fmt.Errorf("failed to write to results file: %w", err)
-	}
-
-	return n, deleteStrategy()
-}
-
-func deleteStrategy() error {
+func WriteResult(pass bool) error {
 	content, err := os.ReadFile(testStrategiesFile)
 	if err != nil {
 		return fmt.Errorf("failed to read test strategies file: %w", err)
 	}
 
-	nlIdx := bytes.IndexByte(content, '\n')
-	if nlIdx == -1 {
-		return nil
+	lines := bytes.Split(content, []byte("\n"))
+	for i, strat := range lines {
+		strat = bytes.TrimSpace(strat)
+		if len(strat) == 0 {
+			break
+		}
+
+		if strat[0] == '=' {
+			strat = strat[7:] // Skip the "=PASS= " or "=FAIL= "
+		}
+
+		if bytes.Equal(strat, []byte(strategyStr)) {
+			if pass {
+				lines[i] = []byte("=PASS= " + strategyStr)
+			} else {
+				lines[i] = []byte("=FAIL= " + strategyStr)
+			}
+
+			content = bytes.Join(lines, []byte("\n"))
+			return os.WriteFile(testStrategiesFile, content, 0644)
+		}
 	}
 
-	return os.WriteFile(testStrategiesFile, content[nlIdx+1:], 0644)
+	return errors.New("strategy not found")
 }
