@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"nhooyr.io/websocket"
+	"github.com/coder/websocket"
 )
 
 // listener listens for websocket connections and converts them to net.Conn.

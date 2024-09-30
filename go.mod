@@ -3,9 +3,9 @@ module github.com/getlantern/lantern-algeneva
 go 1.21
 
 require (
+	github.com/coder/websocket v1.8.12
 	github.com/getlantern/algeneva v0.0.0-20240222191137-2b4e88234f59
 	github.com/stretchr/testify v1.8.4
-	nhooyr.io/websocket v1.8.10
 )
 
 require (

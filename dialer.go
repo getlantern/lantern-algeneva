@@ -7,8 +7,8 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/coder/websocket"
 	"github.com/getlantern/algeneva"
-	"nhooyr.io/websocket"
 )
 
 // Dialer is the interface used to establish connections to the server.
